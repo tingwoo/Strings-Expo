@@ -185,6 +185,14 @@ function draw() {
 
   // rect(0, 0, 2 * radius, 2 * radius);
 
+  let videoSample = [];
+  for(let i = 0; i < res; i++){
+    videoSample.push([]);
+    for(let j = 0; j < res; j++){
+      videoSample[i].push(getVideoSample(i, j));
+    }
+  }
+
   for(let k = 0; k < 50; k++) {
     // find best line
     var bestScore = -100000000;
@@ -203,7 +211,7 @@ function draw() {
 
       blocks.forEach(e => {
         let canvas = currentCanvas[e[0]][e[1]];
-        let truth = getVideoSample(e[0], e[1]);
+        let truth = videoSample[e[0]][e[1]];
         score += diffFormula(canvas, truth) - diffFormula(canvas + valuePerBlock, truth);
         // score += Math.abs(canvas - truth) - Math.abs(canvas + valuePerBlock - truth); // old difference - new difference 
       });
@@ -279,7 +287,7 @@ function draw() {
   for(let i = 0; i < res; i++) {
     for(let j = 0; j < res; j++) {
       if(Math.pow(i-(res-1)/2, 2) + Math.pow(j-(res-1)/2, 2) <= Math.pow((res-1)/2, 2) + 1) {
-        fill(getVideoSample(i, j));
+        fill(videoSample[i][j]);
         rect(i*blockLength, j*blockLength, blockLength * 1.05, blockLength * 1.05);
       }
     }
