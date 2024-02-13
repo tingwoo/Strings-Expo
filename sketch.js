@@ -130,6 +130,9 @@ function handleMap(angle, a, b, elastic) {
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
+  
+  radius = min((width - 100) / (distanceBetweenCenters + 2), (height - 100) / 2);
+  blockLength = radius * 2 / res;
   positionArray = Array.from(Array(numberOfPins).keys()).map((v) => {
     return [radius * (1 + 0.99*cos(2*v/numberOfPins*Math.PI)), radius * (1 + 0.99*sin(2*v/numberOfPins*Math.PI))]
   });
@@ -204,6 +207,7 @@ function draw() {
 
   translate(width/2-radius*scaleVar, height/2-radius*scaleVar);
   scale(scaleVar);
+
   translate(handleMap(actualAngle, 0, -radius * distanceBetweenCenters / 2, true), 0);
 
   videoPixelPerBlock = Math.floor(video.height / res);
@@ -321,6 +325,8 @@ function draw() {
     }
     fill(240);
     text("Frame rate: " + str(Math.round(fr)), 5, 20);
+
+    text(str(video.width) + " x " + str(video.height), 5, 40);
   }
 
   // draw indicator
@@ -366,7 +372,7 @@ function draw() {
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-  radius = min(300, windowWidth / (distanceBetweenCenters + 2), height / 2);
+  radius = min((width - 100) / (distanceBetweenCenters + 2), (height - 100) / 2);
   blockLength = radius * 2 / res;
 
   positionArray = Array.from(Array(numberOfPins).keys()).map((v) => {
