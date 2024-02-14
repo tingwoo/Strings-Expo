@@ -5,7 +5,8 @@ let radius = 300;
 let res = 57; // odd number
 let blockLength = radius * 2 / res;
 let scaleVar = 1;
-let distanceBetweenCenters = 2.3;
+// let distanceBetweenCenters = 2.3;
+let distanceToEdge = 80;
 
 let positionArray;
 
@@ -27,13 +28,16 @@ let totalLines = 5000;
 
 let fr = 0;
 
-let showFrameRate = true;
+let showFrameRate = false;
 
 let draggingHandle = false;
 let handleAngle = -Math.PI / 4;
 let handleAngleDragging = 0;
 
 let timer;
+
+let cutout;
+let videoSampleImage;
 
 function getColorFromPixel(x, y) {
   let w = video.width;
@@ -131,7 +135,7 @@ function handleMap(angle, a, b, elastic) {
 function setup() {
   createCanvas(windowWidth, windowHeight);
   
-  radius = min((width - 100) / (distanceBetweenCenters + 2), (height - 100) / 2);
+  radius = min((width - 2 * distanceToEdge) / 2, (height - 2 * distanceToEdge) / 2);
   blockLength = radius * 2 / res;
   positionArray = Array.from(Array(numberOfPins).keys()).map((v) => {
     return [radius * (1 + 0.99*cos(2*v/numberOfPins*Math.PI)), radius * (1 + 0.99*sin(2*v/numberOfPins*Math.PI))]
@@ -189,6 +193,9 @@ function setup() {
   }
 
   video.hide();
+
+  cutout = createGraphics(600, 600);
+  videoSampleImage = createGraphics(600, 600);
 }
 
 function draw() {
@@ -207,36 +214,28 @@ function draw() {
 
   translate(width/2-radius*scaleVar, height/2-radius*scaleVar);
   scale(scaleVar);
-
-  translate(handleMap(actualAngle, 0, -radius * distanceBetweenCenters / 2, true), 0);
+  // translate(handleMap(actualAngle, 0, -radius * distanceBetweenCenters / 2, true), 0);
 
   videoPixelPerBlock = Math.floor(video.height / res);
   horizontalRes = Math.floor(res * video.width / video.height);
   gap = Math.floor((res * (video.width / video.height - 1)) / 2);
 
-  // draw blocks
-  // fill(0); 
-  // stroke(0, 10);
-
-  // for(let i = 0; i < res; i++) {
-  //   for(let j = 0; j < res; j++) {
-  //     rect(j * blockLength, i * blockLength, blockLength, blockLength);
-  //   }
-  // }
-
-  // rect(0, 0, 2 * radius, 2 * radius);
-
   let videoSample = [];
+  videoSampleImage.blendMode(BLEND);
+  videoSampleImage.noStroke();
+
   for(let i = 0; i < res; i++){
     videoSample.push([]);
     for(let j = 0; j < res; j++){
       videoSample[i].push(getVideoSample(i, j));
+
+      videoSampleImage.fill(videoSample[i][j]);
+      videoSampleImage.rect(i*(600/res), j*(600/res), 600/res*1.05, 600/res*1.05);
     }
   }
 
   // timerCkpt();
 
-  // if not able to optimize, change to 100
   for(let k = 0; k < 50; k++) {
     // find the best line
     let bestScore = -100000000;
@@ -249,7 +248,6 @@ function draw() {
       if(currentLines.length > 0 && i === currentLines[currentLines.length - 1][0]) continue;
 
       let blocks = getLineBlocks(currentPin, i);
-      // let blocks = currentPin < i ? blocksInEachLine[currentPin][i - currentPin - 1] : blocksInEachLine[i][currentPin - i - 1];
       let lineTotalValue = coef * res * lengthOfEachLine[Math.abs(currentPin - i)];
       let valuePerBlock = lineTotalValue / blocks.length;
       let score = 0;
@@ -257,8 +255,7 @@ function draw() {
       blocks.forEach(e => {
         let canvas = currentCanvas[e[0]][e[1]];
         let truth = videoSample[e[0]][e[1]];
-        score += diffFormula(canvas, truth) - diffFormula(canvas + valuePerBlock, truth);
-        // score += Math.abs(canvas - truth) - Math.abs(canvas + valuePerBlock - truth); // old difference - new difference 
+        score += diffFormula(canvas, truth) - diffFormula(canvas + valuePerBlock, truth); // old difference - new difference
       });
 
       if(score > bestScore) {
@@ -313,12 +310,12 @@ function draw() {
   
   // draw pins
   fill(255);
-  stroke(0);
+  noStroke();
   for(let i = 0; i < numberOfPins; i++) {
     ellipse(positionArray[i][0], positionArray[i][1], 3, 3);
   }
 
-  // show frame rate
+  // show info
   if(showFrameRate) {
     if(frameCount % 30 === 0) {
       fr = frameRate();
@@ -340,27 +337,34 @@ function draw() {
   // ellipse(radius * scaleVar, radius * scaleVar, 2 * 1.02 * radius, 2 * 1.02 * radius)
   line(radius * (1 + 1.02 * cos(actualAngle)), radius * (1 + 1.02 * sin(actualAngle)), radius * (1 + 1.07 * cos(actualAngle)), radius * (1 + 1.07 * sin(actualAngle)))
   arc(radius, radius, radius * 1.02 * 2, radius * 1.02 * 2, actualAngle - 0.3, actualAngle + 0.3);
-  // arc(radius * scaleVar, radius * scaleVar, radius * scaleVar * 1.07 * 2, radius * scaleVar * 1.07 * 2, actualAngle - 0.1, actualAngle + 0.1);
-  // arc(radius * scaleVar, radius * scaleVar, radius * scaleVar * 1.02 * 2, radius * scaleVar * 1.02 * 2, actualAngle + 0.17, actualAngle + 0.27);
-  // arc(radius * scaleVar, radius * scaleVar, radius * scaleVar * 1.02 * 2, radius * scaleVar * 1.02 * 2, actualAngle - 0.27, actualAngle - 0.17);
-  // ellipse(radius * scaleVar * (1 + cos(actualAngle)), radius * scaleVar * (1 + sin(actualAngle)), 10, 10);
-  // ellipse(radius * scaleVar * (1 + 1.01 * cos(actualAngle)), radius * scaleVar * (1 + 1.01 * sin(actualAngle)), 10, 10);
-
-  // positionArray = Array.from(Array(numberOfPins).keys()).map((v) => {
-  //   return [radius * (1 + 0.99*cos(2*v/numberOfPins*Math.PI + actualAngle)), radius * (1 + 0.99*sin(2*v/numberOfPins*Math.PI + actualAngle))]
-  // });
 
   // show video sample
-  translate(radius * distanceBetweenCenters, 0);
-  noStroke();
-  for(let i = 0; i < res; i++) {
-    for(let j = 0; j < res; j++) {
-      if(Math.pow(i-(res-1)/2, 2) + Math.pow(j-(res-1)/2, 2) <= Math.pow((res-1)/2, 2) + 1) {
-        fill(videoSample[i][j], handleMap(actualAngle, 0, 255, false));
-        rect(i*blockLength, j*blockLength, blockLength * 1.05, blockLength * 1.05);
-      }
-    }
+
+  if(handleMap(actualAngle, 0, 255, true) > 0.1) {
+    cutout.clear();
+    cutout.blendMode(BLEND);
+    cutout.background(255);
+    cutout.blendMode(REMOVE);
+    cutout.noStroke();
+    cutout.fill(0, handleMap(actualAngle, 0, 255, false));
+    cutout.circle(300, 300, 600);
+
+    videoSampleImage.blendMode(REMOVE);
+    videoSampleImage.image(cutout, 0, 0);
+    
+    image(videoSampleImage, 0, 0, 2*radius, 2*radius);
   }
+
+  // translate(radius * distanceBetweenCenters, 0);
+  // noStroke();
+  // for(let i = 0; i < res; i++) {
+  //   for(let j = 0; j < res; j++) {
+  //     if(Math.pow(i-(res-1)/2, 2) + Math.pow(j-(res-1)/2, 2) <= Math.pow((res-1)/2, 2) + 1) {
+  //       fill(videoSample[i][j], handleMap(actualAngle, 0, 255, false));
+  //       rect(i*blockLength, j*blockLength, blockLength * 1.05, blockLength * 1.05);
+  //     }
+  //   }
+  // }
 
   // reset handle
   if(!draggingHandle) {
@@ -372,7 +376,7 @@ function draw() {
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-  radius = min((width - 100) / (distanceBetweenCenters + 2), (height - 100) / 2);
+  radius = min((width - 2 * distanceToEdge) / 2, (height - 2 * distanceToEdge) / 2);
   blockLength = radius * 2 / res;
 
   positionArray = Array.from(Array(numberOfPins).keys()).map((v) => {
