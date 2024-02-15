@@ -1,12 +1,19 @@
 // my video size: 640 x 480
 
+let canvas;
+let savedCanvas = [];
+
 let numberOfPins = 134; // not multiple of 4
 let radius = 300;
 let res = 57; // odd number
 let blockLength = radius * 2 / res;
-let scaleVar = 1;
-// let distanceBetweenCenters = 2.3;
 let distanceToEdge = 80;
+
+let miniCanvasSize;
+let miniCanvasGap;
+let miniCanvasRatio = 0.28;
+
+let buttonSizeRatio = 0.1;
 
 let positionArray;
 
@@ -33,11 +40,18 @@ let showFrameRate = false;
 let draggingHandle = false;
 let handleAngle = -Math.PI / 4;
 let handleAngleDragging = 0;
+let actualAngle;
 
 let timer;
 
 let cutout;
 let videoSampleImage;
+
+let orangeColor;
+let bgColor;
+let currentShiftDistance = 0;
+
+let maxMiniCanvasRows;
 
 function getColorFromPixel(x, y) {
   let w = video.width;
@@ -133,13 +147,16 @@ function handleMap(angle, a, b, elastic) {
 }
 
 function setup() {
-  createCanvas(windowWidth, windowHeight);
+  canvas = createCanvas(windowWidth, windowHeight);
   
   radius = min((width - 2 * distanceToEdge) / 2, (height - 2 * distanceToEdge) / 2);
   blockLength = radius * 2 / res;
   positionArray = Array.from(Array(numberOfPins).keys()).map((v) => {
     return [radius * (1 + 0.99*cos(2*v/numberOfPins*Math.PI)), radius * (1 + 0.99*sin(2*v/numberOfPins*Math.PI))]
   });
+
+  miniCanvasSize = 2 * radius * miniCanvasRatio;
+  miniCanvasGap = 2 * radius * (1-3*miniCanvasRatio)/2;
 
   video = createCapture(VIDEO);
 
@@ -196,12 +213,15 @@ function setup() {
 
   cutout = createGraphics(600, 600);
   videoSampleImage = createGraphics(600, 600);
+
+  orangeColor = color(255, 79, 0);
+  bgColor = color(20);
 }
 
 function draw() {
   // resetTimer();
   // timerCkpt();
-  background(20); 
+  background(bgColor); 
 
   if(frameCount % 5 === 0) { 
     video.loadPixels(); // takes a lot of time
@@ -210,10 +230,9 @@ function draw() {
   frameRate(60);
   // timerCkpt();
 
-  let actualAngle = handleCurve(handleAngle + handleAngleDragging);
+  actualAngle = handleCurve(handleAngle + handleAngleDragging);
 
-  translate(width/2-radius*scaleVar, height/2-radius*scaleVar);
-  scale(scaleVar);
+  translate(width/2-radius - currentShiftDistance, height/2-radius);
   // translate(handleMap(actualAngle, 0, -radius * distanceBetweenCenters / 2, true), 0);
 
   videoPixelPerBlock = Math.floor(video.height / res);
@@ -326,20 +345,33 @@ function draw() {
     text(str(video.width) + " x " + str(video.height), 5, 40);
   }
 
-  // draw indicator
-  // fill(200, 0, 0)
-  // stroke(0);
-  // ellipse(20+10*cos(frameCount/10), 20+10*sin(frameCount/10), 8, 8);
-
   // draw handle
-  stroke(255);
+  stroke(orangeColor);
+  strokeWeight(2);
   noFill();
-  // ellipse(radius * scaleVar, radius * scaleVar, 2 * 1.02 * radius, 2 * 1.02 * radius)
-  line(radius * (1 + 1.02 * cos(actualAngle)), radius * (1 + 1.02 * sin(actualAngle)), radius * (1 + 1.07 * cos(actualAngle)), radius * (1 + 1.07 * sin(actualAngle)))
+  let handlePos = [radius * cos(actualAngle), radius * sin(actualAngle)];
+  line(radius + handlePos[0] * 1.02, radius + handlePos[1] * 1.02, radius + handlePos[0] * 1.07, radius + handlePos[1] * 1.07)
   arc(radius, radius, radius * 1.02 * 2, radius * 1.02 * 2, actualAngle - 0.3, actualAngle + 0.3);
+  fill(bgColor);
+  if(mouseIsNearHandle() || draggingHandle) circle(radius + handlePos[0] * 1.07, radius + handlePos[1] * 1.07, radius * 0.03);
+
+  // draw capture button
+  if(maxMiniCanvasRows > 0) {
+    let buttonCenter = getButtonCenter();
+    let buttonRadius = radius * buttonSizeRatio;
+    let iconCornerDist = buttonRadius * 0.25;
+    let iconCornerSize = buttonRadius * 0.4;
+    if(mouseIsOnButton()){
+    fill(60);
+    }
+    circle(buttonCenter[0], buttonCenter[1], buttonRadius*2);
+    arc(buttonCenter[0]-iconCornerDist, buttonCenter[1]-iconCornerDist, iconCornerSize, iconCornerSize, Math.PI*1.0-0.05, Math.PI*1.5+0.05);
+    arc(buttonCenter[0]+iconCornerDist, buttonCenter[1]-iconCornerDist, iconCornerSize, iconCornerSize, Math.PI*1.5-0.05, Math.PI*0.0+0.05);
+    arc(buttonCenter[0]+iconCornerDist, buttonCenter[1]+iconCornerDist, iconCornerSize, iconCornerSize, Math.PI*0.0-0.05, Math.PI*0.5+0.05);
+    arc(buttonCenter[0]-iconCornerDist, buttonCenter[1]+iconCornerDist, iconCornerSize, iconCornerSize, Math.PI*0.5-0.05, Math.PI*1.0+0.05);
+  }
 
   // show video sample
-
   if(handleMap(actualAngle, 0, 255, true) > 0.1) {
     cutout.clear();
     cutout.blendMode(BLEND);
@@ -355,29 +387,104 @@ function draw() {
     image(videoSampleImage, 0, 0, 2*radius, 2*radius);
   }
 
-  // translate(radius * distanceBetweenCenters, 0);
-  // noStroke();
-  // for(let i = 0; i < res; i++) {
-  //   for(let j = 0; j < res; j++) {
-  //     if(Math.pow(i-(res-1)/2, 2) + Math.pow(j-(res-1)/2, 2) <= Math.pow((res-1)/2, 2) + 1) {
-  //       fill(videoSample[i][j], handleMap(actualAngle, 0, 255, false));
-  //       rect(i*blockLength, j*blockLength, blockLength * 1.05, blockLength * 1.05);
-  //     }
-  //   }
-  // }
-
   // reset handle
   if(!draggingHandle) {
     handleAngle -= (handleAngle + Math.PI / 4) / (Math.PI / 2) / 8 * (deltaTime * 0.06);
   }
 
-  // timerCkpt();
+  // translate animation
+  currentShiftDistance += (shiftDistance() - currentShiftDistance) * (deltaTime * 0.005);
+
+  // show gallery
+  updateMaxMiniCanvasRows();
+  strokeWeight(2);
+  stroke(255);
+  noFill();
+  savedCanvas.forEach((v, i) => {
+    if(i === savedCanvas.length - 1) stroke(orangeColor);
+
+    if(maxMiniCanvasRows === 2) {
+      let pos = miniCanvasPosition(i, savedCanvas.length);
+      image(v, pos[0], pos[1], miniCanvasSize, miniCanvasSize);
+      circle(pos[0] + 0.5 * miniCanvasSize, pos[1] + 0.5 * miniCanvasSize, miniCanvasSize);
+    } else if(maxMiniCanvasRows === 1 && i >= savedCanvas.length-3) {
+      let pos = miniCanvasPosition(i-max(savedCanvas.length-3, 0), min(savedCanvas.length, 3));
+      image(v, pos[0], pos[1], miniCanvasSize, miniCanvasSize);
+      circle(pos[0] + 0.5 * miniCanvasSize, pos[1] + 0.5 * miniCanvasSize, miniCanvasSize);
+    }
+  })
+
+    // timerCkpt();
+}
+
+function captureCanvas() {
+  // copy main canvas
+  let tmpCanvas = createGraphics(200, 200);
+  tmpCanvas.copy(canvas, (width-2*radius)/2-currentShiftDistance, (height-2*radius)/2, 2*radius, 2*radius, 0, 0, 200, 200);
+  if(savedCanvas.length === 6) {
+    savedCanvas.shift();
+  }
+  // cover capture button & info panel
+  tmpCanvas.fill(bgColor);
+  tmpCanvas.noStroke();
+  tmpCanvas.triangle(0, 200, 0, 100 * Math.sqrt(2), 200 - 100 * Math.sqrt(2), 200);
+  tmpCanvas.triangle(0, 0, 0, 200 - 100 * Math.sqrt(2), 200 - 100 * Math.sqrt(2), 0);
+  tmpCanvas.triangle(200, 0, 200, 200 - 100 * Math.sqrt(2), 100 * Math.sqrt(2), 0);
+  savedCanvas.push(tmpCanvas)
+}
+
+function miniCanvasPosition(index, total) {
+  if(total <= 3) {
+    return [-(miniCanvasSize + miniCanvasGap), index * (miniCanvasSize + miniCanvasGap)]
+  } else {
+    return [(Math.floor(index / 3) - 2) * (miniCanvasSize + miniCanvasGap), (index % 3) * (miniCanvasSize + miniCanvasGap)]
+  }
+}
+
+function shiftDistance() {
+  let tmp;
+  if(savedCanvas.length === 0) tmp = 0;
+  else if (savedCanvas.length <= 3) tmp = -(miniCanvasSize + miniCanvasGap) * 0.5;
+  else tmp = -2 * (miniCanvasSize + miniCanvasGap) * 0.5;
+
+  if(savedCanvas.length === 0) tmp = 0;
+  else if (savedCanvas.length <= 3) tmp = 1;
+  else tmp = 2;
+
+  return -min(tmp, maxMiniCanvasRows) * (miniCanvasSize + miniCanvasGap) * 0.5;
+}
+
+function updateMaxMiniCanvasRows() {
+  if(width - radius * 2 - (miniCanvasSize + miniCanvasGap) * 2 - distanceToEdge * 2 >= 0) maxMiniCanvasRows = 2;
+  else if(width - radius * 2 - (miniCanvasSize + miniCanvasGap) - distanceToEdge * 2 >= 0) maxMiniCanvasRows = 1;
+  else maxMiniCanvasRows = 0;
+}
+
+function getButtonCenter() {
+  return [radius*(buttonSizeRatio+0.07), radius*(2-buttonSizeRatio-0.07)]
+}
+
+function mouseIsOnButton() {
+  let buttonCenter = getButtonCenter();
+  return dist(mouseX-(width/2-radius-currentShiftDistance), mouseY-(height/2-radius), buttonCenter[0], buttonCenter[1]) < radius*buttonSizeRatio;
+}
+
+function getHandleCenter() {
+  return [radius * (1 + 1.07 * cos(actualAngle)), radius * (1 + 1.07 * sin(actualAngle))];
+}
+
+function mouseIsNearHandle() {
+  let handleCenter = getHandleCenter();
+  return dist(mouseX-(width/2-radius-currentShiftDistance), mouseY-(height/2-radius), handleCenter[0], handleCenter[1]) < radius*0.2;
 }
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
   radius = min((width - 2 * distanceToEdge) / 2, (height - 2 * distanceToEdge) / 2);
   blockLength = radius * 2 / res;
+
+  miniCanvasSize = 2 * radius * miniCanvasRatio;
+  miniCanvasGap = 2 * radius * (1-3*miniCanvasRatio)/2;
 
   positionArray = Array.from(Array(numberOfPins).keys()).map((v) => {
     return [radius * (1 + 0.99*cos(2*v/numberOfPins*Math.PI)), radius * (1 + 0.99*sin(2*v/numberOfPins*Math.PI))]
@@ -387,6 +494,8 @@ function windowResized() {
 function keyTyped() {
   if(key === 'f' || key === 'F') {
     showFrameRate = !showFrameRate;
+  } else if(key === 'c' || key === 'C') {
+    captureCanvas();
   }
 }
 
@@ -400,6 +509,10 @@ function mouseReleased() {
   draggingHandle = false;
   handleAngle += handleAngleDragging;
   handleAngleDragging = 0;
+
+  if(maxMiniCanvasRows > 0 && mouseIsOnButton()){
+    captureCanvas();
+  }
 }
 
 function mouseDragged() {
