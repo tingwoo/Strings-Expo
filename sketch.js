@@ -155,7 +155,7 @@ function setup() {
     return [radius * (1 + 0.99*cos(2*v/numberOfPins*Math.PI)), radius * (1 + 0.99*sin(2*v/numberOfPins*Math.PI))]
   });
 
-  miniCanvasSize = 2 * radius * miniCanvasRatio;
+  miniCanvasSize = Math.round(2 * radius * miniCanvasRatio);
   miniCanvasGap = 2 * radius * (1-3*miniCanvasRatio)/2;
 
   video = createCapture(VIDEO);
@@ -322,7 +322,7 @@ function draw() {
 
   // draw all lines in the queue
   stroke(255, 15);
-  strokeWeight(0.8);
+  strokeWeight(radius * 0.0025);
   currentLines.forEach(e => {
     line(positionArray[e[0]][0], positionArray[e[0]][1], positionArray[e[1]][0], positionArray[e[1]][1]);
   });
@@ -419,17 +419,17 @@ function draw() {
 
 function captureCanvas() {
   // copy main canvas
-  let tmpCanvas = createGraphics(200, 200);
-  tmpCanvas.copy(canvas, (width-2*radius)/2-currentShiftDistance, (height-2*radius)/2, 2*radius, 2*radius, 0, 0, 200, 200);
+  let tmpCanvas = createGraphics(miniCanvasSize, miniCanvasSize);
+  tmpCanvas.copy(canvas, (width-2*radius)/2-currentShiftDistance, (height-2*radius)/2, 2*radius, 2*radius, 0, 0, miniCanvasSize, miniCanvasSize);
   if(savedCanvas.length === 6) {
     savedCanvas.shift();
   }
   // cover capture button & info panel
   tmpCanvas.fill(bgColor);
   tmpCanvas.noStroke();
-  tmpCanvas.triangle(0, 200, 0, 100 * Math.sqrt(2), 200 - 100 * Math.sqrt(2), 200);
-  tmpCanvas.triangle(0, 0, 0, 200 - 100 * Math.sqrt(2), 200 - 100 * Math.sqrt(2), 0);
-  tmpCanvas.triangle(200, 0, 200, 200 - 100 * Math.sqrt(2), 100 * Math.sqrt(2), 0);
+  tmpCanvas.triangle(0, miniCanvasSize, 0, miniCanvasSize * Math.sqrt(0.5), miniCanvasSize * (1 - Math.sqrt(0.5)), miniCanvasSize);
+  tmpCanvas.triangle(0, 0, 0, miniCanvasSize * (1 - Math.sqrt(0.5)), miniCanvasSize * (1 - Math.sqrt(0.5)), 0);
+  tmpCanvas.triangle(miniCanvasSize, 0, miniCanvasSize, miniCanvasSize * (1 - Math.sqrt(0.5)), miniCanvasSize * Math.sqrt(0.5), 0);
   savedCanvas.push(tmpCanvas)
 }
 
@@ -483,7 +483,7 @@ function windowResized() {
   radius = min((width - 2 * distanceToEdge) / 2, (height - 2 * distanceToEdge) / 2);
   blockLength = radius * 2 / res;
 
-  miniCanvasSize = 2 * radius * miniCanvasRatio;
+  miniCanvasSize = Math.round(2 * radius * miniCanvasRatio);
   miniCanvasGap = 2 * radius * (1-3*miniCanvasRatio)/2;
 
   positionArray = Array.from(Array(numberOfPins).keys()).map((v) => {
