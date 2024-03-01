@@ -243,12 +243,77 @@ function draw() {
   videoSampleImage.blendMode(BLEND);
   videoSampleImage.noStroke();
 
+  // get video sample
   for(let i = 0; i < res; i++){
     videoSample.push([]);
     for(let j = 0; j < res; j++){
       videoSample[i].push(getVideoSample(i, j));
+    }
+  }
 
-      videoSampleImage.fill(videoSample[i][j]);
+  n = 4
+  kuwaharaMean = []
+  kuwaharaStd = []
+
+  // get mean
+  for(let i = 0; i < res-n+1; i++){
+    kuwaharaMean.push([])
+    for(let j = 0; j < res-n+1; j++){
+      let m = 0
+      for(let k1 = 0; k1 < n; k1++){
+        for(let k2 = 0; k2 < n; k2++){
+          m += videoSample[i+k1][j+k2]
+        }
+      }
+      m /= n * n
+      kuwaharaMean[i].push(m)
+    }
+  }
+
+  // get std
+  for(let i = 0; i < res-n+1; i++){
+    kuwaharaStd.push([])
+    for(let j = 0; j < res-n+1; j++){
+      let s = 0
+      let m = kuwaharaMean[i][j]
+      for(let k1 = 0; k1 < n; k1++){
+        for(let k2 = 0; k2 < n; k2++){
+          s += (videoSample[i+k1][j+k2] - m) * (videoSample[i+k1][j+k2] - m)
+        }
+      }
+      s /= n * n
+      kuwaharaStd[i].push(s)
+    }
+  }
+
+  // draw on videoSampleImage
+  for(let i = 0; i < res; i++){
+    for(let j = 0; j < res; j++){
+
+      let bestMean = 0;
+      let bestStd = 10000000000;
+
+      // upper left
+      if(i >= n-1 && j >= n-1) {
+        if(kuwaharaStd[i-n+1][j-n+1] < bestStd) bestMean = kuwaharaMean[i-n+1][j-n+1]
+      }
+
+      // upper right
+      if(i < res-n+1 && j >= n-1) {
+        if(kuwaharaStd[i][j-n+1] < bestStd) bestMean = kuwaharaMean[i][j-n+1]
+      }
+
+      // lower right
+      if(i < res-n+1 && j < res-n+1) {
+        if(kuwaharaStd[i][j] < bestStd) bestMean = kuwaharaMean[i][j]
+      }
+
+      // lower left
+      if(i >= n-1 && j < res-n+1) {
+        if(kuwaharaStd[i-n+1][j] < bestStd) bestMean = kuwaharaMean[i-n+1][j]
+      }
+
+      videoSampleImage.fill(bestMean);
       videoSampleImage.rect(i*(600/res), j*(600/res), 600/res*1.05, 600/res*1.05);
     }
   }
@@ -372,13 +437,15 @@ function draw() {
   }
 
   // show video sample
-  if(handleMap(actualAngle, 0, 255, true) > 0.1) {
+  // if(true) {
+  if(handleMap(actualAngle, 0, 255, true) > 0.1) { ////
     cutout.clear();
     cutout.blendMode(BLEND);
     cutout.background(255);
     cutout.blendMode(REMOVE);
     cutout.noStroke();
-    cutout.fill(0, handleMap(actualAngle, 0, 255, false));
+    cutout.fill(0, handleMap(actualAngle, 0, 255, false)); ////
+    // cutout.fill(0);
     cutout.circle(300, 300, 600);
 
     videoSampleImage.blendMode(REMOVE);
