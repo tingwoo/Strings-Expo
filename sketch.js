@@ -155,6 +155,11 @@ function characterMap(bri) {
   return characterSet[Math.floor(bri/32)][Math.floor(Math.random() * 8)];
 }
 
+function drawCross(c, width) {
+  line(c[0] - width / 2, c[1] - width / 2, c[0] + width / 2, c[1] + width / 2);
+  line(c[0] - width / 2, c[1] + width / 2, c[0] + width / 2, c[1] - width / 2);
+}
+
 let font;
 
 function preload() {
@@ -268,7 +273,7 @@ function draw() {
   }
 
   if(frameCount % 5 === 0) {
-    videoSampleImage.background(0);
+    videoSampleImage.background(bgColor);
     videoSampleImage.textAlign(CENTER, CENTER);
     for(let i = 0; i < res; i++){
       for(let j = 0; j < res; j++){
@@ -388,12 +393,12 @@ function draw() {
 
   // draw capture button
   if(maxMiniCanvasRows > 0) {
-    let buttonCenter = getButtonCenter();
+    let buttonCenter = getCaptureButtonCenter();
     let buttonRadius = radius * buttonSizeRatio;
     let iconCornerDist = buttonRadius * 0.25;
     let iconCornerSize = buttonRadius * 0.4;
-    if(mouseIsOnButton()){
-    fill(60);
+    if(mouseIsOnButton(getCaptureButtonCenter(), radius * buttonSizeRatio)){
+      fill(60);
     }
     circle(buttonCenter[0], buttonCenter[1], buttonRadius*2);
     arc(buttonCenter[0]-iconCornerDist, buttonCenter[1]-iconCornerDist, iconCornerSize, iconCornerSize, Math.PI*1.0-0.05, Math.PI*1.5+0.05);
@@ -437,13 +442,23 @@ function draw() {
     if(i === savedCanvas.length - 1) stroke(orangeColor);
 
     if(maxMiniCanvasRows === 2) {
-      let pos = miniCanvasPosition(i, savedCanvas.length);
-      image(v, pos[0], pos[1], miniCanvasSize, miniCanvasSize);
-      circle(pos[0] + 0.5 * miniCanvasSize, pos[1] + 0.5 * miniCanvasSize, miniCanvasSize);
+      let posCorner = miniCanvasPosition(i, savedCanvas.length);
+      let posCenter = [posCorner[0] + 0.5 * miniCanvasSize, posCorner[1] + 0.5 * miniCanvasSize];
+      image(v, posCorner[0], posCorner[1], miniCanvasSize, miniCanvasSize);
+      circle(posCenter[0], posCenter[1], miniCanvasSize);
+      if(mouseIsOnButton(posCenter, 0.5 * miniCanvasSize)) {
+        stroke(255);
+        drawCross(posCenter, miniCanvasSize * 0.9);
+      }
     } else if(maxMiniCanvasRows === 1 && i >= savedCanvas.length-3) {
-      let pos = miniCanvasPosition(i-max(savedCanvas.length-3, 0), min(savedCanvas.length, 3));
-      image(v, pos[0], pos[1], miniCanvasSize, miniCanvasSize);
-      circle(pos[0] + 0.5 * miniCanvasSize, pos[1] + 0.5 * miniCanvasSize, miniCanvasSize);
+      let posCorner = miniCanvasPosition(i-max(savedCanvas.length-3, 0), min(savedCanvas.length, 3));
+      let posCenter = [posCorner[0] + 0.5 * miniCanvasSize, posCorner[1] + 0.5 * miniCanvasSize];
+      image(v, posCorner[0], posCorner[1], miniCanvasSize, miniCanvasSize);
+      circle(posCenter[0], posCenter[1], miniCanvasSize);
+      if(mouseIsOnButton(posCenter, 0.5 * miniCanvasSize)) {
+        stroke(255);
+        drawCross(posCenter, miniCanvasSize * 0.9);
+      }
     }
   })
 
@@ -463,6 +478,7 @@ function captureCanvas() {
   tmpCanvas.triangle(0, miniCanvasSize, 0, miniCanvasSize * Math.sqrt(0.5), miniCanvasSize * (1 - Math.sqrt(0.5)), miniCanvasSize);
   tmpCanvas.triangle(0, 0, 0, miniCanvasSize * (1 - Math.sqrt(0.5)), miniCanvasSize * (1 - Math.sqrt(0.5)), 0);
   tmpCanvas.triangle(miniCanvasSize, 0, miniCanvasSize, miniCanvasSize * (1 - Math.sqrt(0.5)), miniCanvasSize * Math.sqrt(0.5), 0);
+  tmpCanvas.triangle(miniCanvasSize, miniCanvasSize, miniCanvasSize * Math.sqrt(0.5), miniCanvasSize, miniCanvasSize, miniCanvasSize * Math.sqrt(0.5));
   savedCanvas.push(tmpCanvas)
 }
 
@@ -493,13 +509,12 @@ function updateMaxMiniCanvasRows() {
   else maxMiniCanvasRows = 0;
 }
 
-function getButtonCenter() {
+function getCaptureButtonCenter() {
   return [radius*(buttonSizeRatio+0.07), radius*(2-buttonSizeRatio-0.07)]
 }
 
-function mouseIsOnButton() {
-  let buttonCenter = getButtonCenter();
-  return dist(mouseX-(width/2-radius-currentShiftDistance), mouseY-(height/2-radius), buttonCenter[0], buttonCenter[1]) < radius*buttonSizeRatio;
+function mouseIsOnButton(c, r) {
+  return dist(mouseX-(width/2-radius-currentShiftDistance), mouseY-(height/2-radius), c[0], c[1]) < r;
 }
 
 function getHandleCenter() {
@@ -545,9 +560,26 @@ function mouseReleased() {
   handleAngle += handleAngleDragging;
   handleAngleDragging = 0;
 
-  if(maxMiniCanvasRows > 0 && mouseIsOnButton()){
+  if(maxMiniCanvasRows > 0 && mouseIsOnButton(getCaptureButtonCenter(), radius * buttonSizeRatio)){
     captureCanvas();
+    return
   }
+
+  savedCanvas.forEach((v, i) => {
+    if(maxMiniCanvasRows === 2) {
+      let posCorner = miniCanvasPosition(i, savedCanvas.length);
+      let posCenter = [posCorner[0] + 0.5 * miniCanvasSize, posCorner[1] + 0.5 * miniCanvasSize];
+      if(mouseIsOnButton(posCenter, 0.5 * miniCanvasSize)) {
+        savedCanvas.splice(i, 1);
+      }
+    } else if(maxMiniCanvasRows === 1 && i >= savedCanvas.length-3) {
+      let posCorner = miniCanvasPosition(i-max(savedCanvas.length-3, 0), min(savedCanvas.length, 3));
+      let posCenter = [posCorner[0] + 0.5 * miniCanvasSize, posCorner[1] + 0.5 * miniCanvasSize];
+      if(mouseIsOnButton(posCenter, 0.5 * miniCanvasSize)) {
+        savedCanvas.splice(i, 1);
+      }
+    }
+  })
 }
 
 function mouseDragged() {
