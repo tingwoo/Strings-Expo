@@ -36,6 +36,7 @@ let totalLines = 5000;
 let fr = 0;
 
 let showFrameRate = false;
+let showAsciiArt = false;
 
 let draggingHandle = false;
 let handleAngle = -Math.PI / 4;
@@ -46,6 +47,7 @@ let timer;
 
 let cutout;
 let videoSampleImage;
+let displayImage;
 
 let orangeColor;
 let bgColor;
@@ -146,6 +148,19 @@ function handleMap(angle, a, b, elastic) {
   return constrain(map(angle, -Math.PI / 4, Math.PI / 4, a, b), a, b);
 }
 
+let characterSet = [" ',.`',.", ";:-\";:-\"", "?=+~<>!l", "/\\(){}[]", "zcvunxrt", "ZOLCJUYX", "oahkbdwm", "$@B%&WM#"]
+// let characters = " `.-':_,^=;><+!rc*/z?sLTv)J7(|Fi{C}fI31tlu[neoZ5Yxjya]2ESwqkP6h9d4VpOGbUAKXHm8RD#$Bg0MNWQ%&@"
+function characterMap(bri) {
+  // return characters[Math.floor(bri / 256 * 92)]
+  return characterSet[Math.floor(bri/32)][Math.floor(Math.random() * 8)];
+}
+
+let font;
+
+function preload() {
+  font = loadFont('assets/VictorMono-Medium.otf');
+}
+
 function setup() {
   canvas = createCanvas(windowWidth, windowHeight);
   
@@ -213,6 +228,7 @@ function setup() {
 
   cutout = createGraphics(600, 600);
   videoSampleImage = createGraphics(600, 600);
+  displayImage = createGraphics(600, 600);
 
   orangeColor = color(255, 79, 0);
   bgColor = color(20);
@@ -246,10 +262,25 @@ function draw() {
   for(let i = 0; i < res; i++){
     videoSample.push([]);
     for(let j = 0; j < res; j++){
-      videoSample[i].push(getVideoSample(i, j));
+      let sample = getVideoSample(i, j);
+      videoSample[i].push(sample);
+    }
+  }
 
-      videoSampleImage.fill(videoSample[i][j]);
-      videoSampleImage.rect(i*(600/res), j*(600/res), 600/res*1.05, 600/res*1.05);
+  if(frameCount % 5 === 0) {
+    videoSampleImage.background(0);
+    videoSampleImage.textAlign(CENTER, CENTER);
+    for(let i = 0; i < res; i++){
+      for(let j = 0; j < res; j++){
+        if(!showAsciiArt) {
+          videoSampleImage.fill(videoSample[j][i]);
+          videoSampleImage.rect(j*(600/res), i*(600/res), 600/res*1.05, 600/res*1.05);
+        } else {
+          videoSampleImage.fill(255);
+          videoSampleImage.textFont(font, 12);
+          videoSampleImage.text(characterMap(videoSample[j][i]), (j+0.5)*(600/res), (i+0.5)*(600/res));
+        }
+      }
     }
   }
 
@@ -381,10 +412,12 @@ function draw() {
     cutout.fill(0, handleMap(actualAngle, 0, 255, false));
     cutout.circle(300, 300, 600);
 
-    videoSampleImage.blendMode(REMOVE);
-    videoSampleImage.image(cutout, 0, 0);
+    displayImage.blendMode(BLEND);
+    displayImage.image(videoSampleImage, 0, 0);
+    displayImage.blendMode(REMOVE);
+    displayImage.image(cutout, 0, 0);
     
-    image(videoSampleImage, 0, 0, 2*radius, 2*radius);
+    image(displayImage, 0, 0, 2*radius, 2*radius);
   }
 
   // reset handle
@@ -494,6 +527,8 @@ function windowResized() {
 function keyTyped() {
   if(key === 'f' || key === 'F') {
     showFrameRate = !showFrameRate;
+  } else if(key === 'a' || key === 'A') {
+    showAsciiArt = !showAsciiArt;
   } else if(key === 'c' || key === 'C') {
     captureCanvas();
   }
