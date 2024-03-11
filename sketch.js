@@ -36,12 +36,14 @@ let totalLines = 5000;
 let fr = 0;
 
 let showFrameRate = false;
-let showAsciiArt = false;
+let showAsciiArt = true;
 
 let draggingHandle = false;
 let handleAngle = -Math.PI / 4;
 let handleAngleDragging = 0;
 let actualAngle;
+
+let targetAngle = -Math.PI / 4;
 
 let timer;
 
@@ -356,18 +358,39 @@ function draw() {
 
   // timerCkpt();
 
-  // draw all lines in the queue
-  stroke(255, 15);
-  strokeWeight(radius * 0.0025);
-  currentLines.forEach(e => {
-    line(positionArray[e[0]][0], positionArray[e[0]][1], positionArray[e[1]][0], positionArray[e[1]][1]);
-  });
-  
-  // draw pins
-  fill(255);
-  noStroke();
-  for(let i = 0; i < numberOfPins; i++) {
-    ellipse(positionArray[i][0], positionArray[i][1], 3, 3);
+  // show strings
+  if(handleMap(actualAngle, 0, 255, true) < 254.9) {
+    // draw all lines in the queue
+    stroke(255, 15);
+    strokeWeight(radius * 0.0025);
+    currentLines.forEach(e => {
+      line(positionArray[e[0]][0], positionArray[e[0]][1], positionArray[e[1]][0], positionArray[e[1]][1]);
+    });
+    
+    // draw pins
+    fill(255);
+    noStroke();
+    for(let i = 0; i < numberOfPins; i++) {
+      ellipse(positionArray[i][0], positionArray[i][1], 3, 3);
+    }
+  }
+
+  // show video sample
+  if(handleMap(actualAngle, 0, 255, true) > 0.1) {
+    cutout.clear();
+    cutout.blendMode(BLEND);
+    cutout.background(255);
+    cutout.blendMode(REMOVE);
+    cutout.noStroke();
+    cutout.fill(0, handleMap(actualAngle, 0, 255, false));
+    cutout.circle(300, 300, 600);
+
+    displayImage.blendMode(BLEND);
+    displayImage.image(videoSampleImage, 0, 0);
+    displayImage.blendMode(REMOVE);
+    displayImage.image(cutout, 0, 0);
+    
+    image(displayImage, 0, 0, 2*radius, 2*radius);
   }
 
   // show info
@@ -376,6 +399,7 @@ function draw() {
       fr = frameRate();
     }
     fill(240);
+    noStroke();
     text("Frame rate: " + str(Math.round(fr)), 5, 20);
 
     text(str(video.width) + " x " + str(video.height), 5, 40);
@@ -407,27 +431,12 @@ function draw() {
     arc(buttonCenter[0]-iconCornerDist, buttonCenter[1]+iconCornerDist, iconCornerSize, iconCornerSize, Math.PI*0.5-0.05, Math.PI*1.0+0.05);
   }
 
-  // show video sample
-  if(handleMap(actualAngle, 0, 255, true) > 0.1) {
-    cutout.clear();
-    cutout.blendMode(BLEND);
-    cutout.background(255);
-    cutout.blendMode(REMOVE);
-    cutout.noStroke();
-    cutout.fill(0, handleMap(actualAngle, 0, 255, false));
-    cutout.circle(300, 300, 600);
-
-    displayImage.blendMode(BLEND);
-    displayImage.image(videoSampleImage, 0, 0);
-    displayImage.blendMode(REMOVE);
-    displayImage.image(cutout, 0, 0);
-    
-    image(displayImage, 0, 0, 2*radius, 2*radius);
-  }
+  if(actualAngle < 0) { targetAngle = -Math.PI / 4; }
+  else { targetAngle = Math.PI / 4; }
 
   // reset handle
   if(!draggingHandle) {
-    handleAngle -= (handleAngle + Math.PI / 4) / (Math.PI / 2) / 8 * (deltaTime * 0.06);
+    handleAngle -= (handleAngle - targetAngle) / (Math.PI / 2) / 8 * (deltaTime * 0.06);
   }
 
   // translate animation
