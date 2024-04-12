@@ -302,6 +302,7 @@ function draw() {
   if(frameCount % 5 === 0) {
     videoSampleImage.background(bgColor);
     videoSampleImage.textAlign(CENTER, CENTER);
+    const alpha = constrain(map(irisState, PI / 3 - 0.8, PI / 3, 255, 0), 0, 255);
     for(let i = 0; i < res; i++){
       let sum = 0;
       for(let j = 0; j < res; j++){
@@ -310,7 +311,7 @@ function draw() {
           videoSampleImage.fill(videoSample[j][i]);
           videoSampleImage.rect(j*(600/res), i*(600/res), 600/res*1.05, 600/res*1.05);
         } else {
-          videoSampleImage.fill(255, constrain(map(irisState, PI / 3 - 0.8, PI / 3, 255, 0), 0, 255));
+          videoSampleImage.fill(255, alpha);
           videoSampleImage.textFont(font, 12);
           videoSampleImage.text(characterMap(videoSample[j][i]), (j + 0.5) * (600 / res), (i + 0.5) * (600 / res));
         }
@@ -339,7 +340,7 @@ function draw() {
   }
 
   // timerCkpt();
-if(irisState < PI / 3 - 0.0001){
+if(irisState < PI / 3 - 0.001){
   for(let k = 0; k < 50; k++) {
     // find the best line
     let bestScore = -100000000;
@@ -463,35 +464,38 @@ if(irisState < PI / 3 - 0.0001){
   if(mouseIsNearHandle() || draggingHandle) circle(radius + handlePos[0] * 1.07, radius + handlePos[1] * 1.07, radius * 0.03);
 
   // draw iris
-  const arcRotateAngle = irisState;
-  const arcLengths = irisArcFunc(arcRotateAngle);
-  const irisR = radius * 0.99;
-  translate(radius, radius);
-  fill(bgColor);
-  strokeWeight(2);
-  stroke(255, constrain(map(irisState, 0, 0.1, 0, 255), 0, 255));
+  if(irisState > 0.001){
+    console.log("Hi")
+    const arcRotateAngle = irisState;
+    const arcLengths = irisArcFunc(arcRotateAngle);
+    const irisR = radius * 0.99;
+    translate(radius, radius);
+    fill(bgColor);
+    strokeWeight(2);
+    stroke(255, constrain(map(irisState, 0, 0.1, 0, 255), 0, 255));
 
-  for(let i = 0; i < TWO_PI - 0.001; i += TWO_PI / 8) {
-    const arcStartPos1 = [irisR * cos(i - PI / 4), irisR * sin(i - PI / 4)];
-    const arcStartPos2 = [irisR * cos(i), irisR * sin(i)];
-    const arcCenter1 = [arcStartPos1[0] + irisR * cos(PI + i - PI / 4 + arcRotateAngle), arcStartPos1[1] + irisR * sin(PI + i - PI / 4 + arcRotateAngle)];
-    const arcCenter2 = [arcStartPos2[0] + irisR * cos(PI + i + arcRotateAngle), arcStartPos2[1] + irisR * sin(PI + i + arcRotateAngle)];
+    for(let i = 0; i < TWO_PI - 0.001; i += TWO_PI / 8) {
+      const arcStartPos1 = [irisR * cos(i - PI / 4), irisR * sin(i - PI / 4)];
+      const arcStartPos2 = [irisR * cos(i), irisR * sin(i)];
+      const arcCenter1 = [arcStartPos1[0] + irisR * cos(PI + i - PI / 4 + arcRotateAngle), arcStartPos1[1] + irisR * sin(PI + i - PI / 4 + arcRotateAngle)];
+      const arcCenter2 = [arcStartPos2[0] + irisR * cos(PI + i + arcRotateAngle), arcStartPos2[1] + irisR * sin(PI + i + arcRotateAngle)];
 
-    beginShape();
-    for(let j = 0; j < arcLengths[0]; j += 0.05) {
-      vertex(arcCenter1[0] + irisR * cos(arcRotateAngle + i - PI/4 + j), arcCenter1[1] + irisR * sin(arcRotateAngle + i - PI/4 + j))
+      beginShape();
+      for(let j = 0; j < arcLengths[0]; j += 0.05) {
+        vertex(arcCenter1[0] + irisR * cos(arcRotateAngle + i - PI/4 + j), arcCenter1[1] + irisR * sin(arcRotateAngle + i - PI/4 + j))
+      }
+
+      for(let j = arcLengths[1]; j > 0; j -= 0.05) {
+        vertex(arcCenter2[0] + irisR * cos(arcRotateAngle + i + j), arcCenter2[1] + irisR * sin(arcRotateAngle + i + j));
+      }
+
+      for(let j = 0; j < PI * 0.25; j += 0.05) {
+        vertex(irisR * cos(i - j), irisR * sin(i - j));
+      }
+      endShape(CLOSE);
     }
-
-    for(let j = arcLengths[1]; j > 0; j -= 0.05) {
-      vertex(arcCenter2[0] + irisR * cos(arcRotateAngle + i + j), arcCenter2[1] + irisR * sin(arcRotateAngle + i + j));
-    }
-
-    for(let j = 0; j < PI * 0.25; j += 0.05) {
-      vertex(irisR * cos(i - j), irisR * sin(i - j));
-    }
-    endShape(CLOSE);
+    translate(-radius, -radius);
   }
-  translate(-radius, -radius);
 
   // draw capture button
   if(maxMiniCanvasRows > 0 ) {
