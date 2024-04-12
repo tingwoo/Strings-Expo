@@ -3,11 +3,11 @@
 let canvas;
 let savedCanvas = [];
 
-let numberOfPins = 134; // not multiple of 4
+const numberOfPins = 134; // not multiple of 4
+const res = 57; // odd number
+const distanceToEdge = 80;
 let radius = 300;
-let res = 57; // odd number
 let blockLength = radius * 2 / res;
-let distanceToEdge = 80;
 
 let miniCanvasSize;
 let miniCanvasGap;
@@ -30,7 +30,7 @@ let currentCanvas = []; // current block brightness
 let currentLines = [];  // queue of Lines
 let currentPin = 0;
 
-let coef = 1.5;
+const coef = 1.5;
 let totalLines = 5000;
 
 let fr = 0;
@@ -63,14 +63,14 @@ let lastVideoValue = [new Array(res).fill(255), new Array(res).fill(255)];
 let irisState = Math.PI / 3;
 
 function getColorFromPixel(x, y) {
-  let w = video.width;
-  let i = (y*w+x)*4;
+  const w = video.width;
+  const i = (y*w+x)*4;
   return [video.pixels[i], video.pixels[i+1], video.pixels[i+2], video.pixels[i+3]];
 }
 
 function filt(bri) {
-  let high = 235;
-  let low = 55;
+  const high = 235;
+  const low = 55;
   if(bri < low) {
     return 0;
   } else if(bri <= high) {
@@ -80,7 +80,7 @@ function filt(bri) {
 }
 
 function getVector(first, second) {
-  let slope = (first[1] - second[1]) / (first[0] - second[0]);
+  const slope = (first[1] - second[1]) / (first[0] - second[0]);
   if(Math.abs(slope) <= 1) {
     return (first[0] - second[0] <= 0) ? [1, slope] : [-1, slope];
   } else {
@@ -89,20 +89,20 @@ function getVector(first, second) {
 }
 
 function blockToPixel(coord) {
-  let x = (coord[0] + 0.5) * (radius * 2 / res);
-  let y = (coord[1] + 0.5) * (radius * 2 / res);
+  const x = (coord[0] + 0.5) * (radius * 2 / res);
+  const y = (coord[1] + 0.5) * (radius * 2 / res);
   return [x, y];
 }
 
 function pixelToBlock(coord) {
-  let x = coord[0] / (radius * 2 / res) - 0.5;
-  let y = coord[1] / (radius * 2 / res) - 0.5;
+  const x = coord[0] / (radius * 2 / res) - 0.5;
+  const y = coord[1] / (radius * 2 / res) - 0.5;
   return [x, y];
 }
 
 function pixelToBlockDiscrete(coord) {
-  let x = Math.round(coord[0] / (radius * 2 / res) - 0.5);
-  let y = Math.round(coord[1] / (radius * 2 / res) - 0.5);
+  const x = Math.round(coord[0] / (radius * 2 / res) - 0.5);
+  const y = Math.round(coord[1] / (radius * 2 / res) - 0.5);
   return [x, y];
 }
 
@@ -113,7 +113,7 @@ function getLineBlocks(first, second){
 }
 
 function getVideoSample(x, y) {
-  let c = getColorFromPixel((horizontalRes-x-gap)*videoPixelPerBlock, y*videoPixelPerBlock);
+  const c = getColorFromPixel((horizontalRes-x-gap)*videoPixelPerBlock, y*videoPixelPerBlock);
   return filt(brightness(c) * 2.55);
 }
 
@@ -155,8 +155,8 @@ function handleMap(angle, a, b, elastic) {
   return constrain(map(angle, -Math.PI / 4, Math.PI / 4, a, b), a, b);
 }
 
-let characterSet = [" ',.`',.", ";:-\";:-\"", "?=+~<>!l", "/\\(){}[]", "zcvunxrt", "ZOLCJUYX", "oahkbdwm", "$@B%&WM#"]
-// let characters = " `.-':_,^=;><+!rc*/z?sLTv)J7(|Fi{C}fI31tlu[neoZ5Yxjya]2ESwqkP6h9d4VpOGbUAKXHm8RD#$Bg0MNWQ%&@"
+const characterSet = [" ',.`',.", ";:-\";:-\"", "?=+~<>!l", "/\\(){}[]", "zcvunxrt", "ZOLCJUYX", "oahkbdwm", "$@B%&WM#"]
+// const characters = " `.-':_,^=;><+!rc*/z?sLTv)J7(|Fi{C}fI31tlu[neoZ5Yxjya]2ESwqkP6h9d4VpOGbUAKXHm8RD#$Bg0MNWQ%&@"
 function characterMap(bri) {
   // return characters[Math.floor(bri / 256 * 92)]
   return characterSet[Math.floor(bri/32)][Math.floor(Math.random() * 8)];
@@ -167,22 +167,22 @@ function drawCross(c, width) {
   line(c[0] - width / 2, c[1] + width / 2, c[0] + width / 2, c[1] - width / 2);
 }
 
-function tmpAngleFunc(angle) {
-  let a = 1 - Math.cos(angle);
-  let b = Math.sin(angle);
-  let c = 1 / Math.sqrt(2) - Math.cos(angle - PI * 0.25);
-  let d = 1 / Math.sqrt(2) + Math.sin(angle - PI * 0.25);
+function irisArcFunc(angle) {
+  const a = 1 - Math.cos(angle);
+  const b = Math.sin(angle);
+  const c = 1 / Math.sqrt(2) - Math.cos(angle - PI * 0.25);
+  const d = 1 / Math.sqrt(2) + Math.sin(angle - PI * 0.25);
 
-  let dist = sqrt(sq(a - c) + sq(b - d));
-  let a0 = Math.acos(dist * 0.5);
+  const dist = sqrt(sq(a - c) + sq(b - d));
+  const a0 = Math.acos(dist * 0.5);
 
-  let vec1 = [Math.cos(PI * 0.25 - angle), Math.sin(PI * 0.25 - angle)]
-  let vec2 = [a - c, b - d];
-  let a1 = Math.acos((vec1[0] * vec2[0] + vec1[1] * vec2[1]) / dist);
+  const vec1 = [Math.cos(PI * 0.25 - angle), Math.sin(PI * 0.25 - angle)]
+  const vec2 = [a - c, b - d];
+  const a1 = Math.acos((vec1[0] * vec2[0] + vec1[1] * vec2[1]) / dist);
 
-  let vec3 = [-Math.cos(angle), Math.sin(angle)]
-  let vec4 = [c - a, d - b];
-  let a2 = Math.acos((vec3[0] * vec4[0] + vec3[1] * vec4[1]) / dist);
+  const vec3 = [-Math.cos(angle), Math.sin(angle)]
+  const vec4 = [c - a, d - b];
+  const a2 = Math.acos((vec3[0] * vec4[0] + vec3[1] * vec4[1]) / dist);
 
   return [angle > PI * 0.25 ? (a0 - a1) : (a0 + a1), PI - a0 - a2];
 }
@@ -209,18 +209,18 @@ function setup() {
 
   // generate covered blocks for all possible lines
   for(let i = 0; i < numberOfPins-1; i++) {
-    let start = pixelToBlock(positionArray[i]);
+    const start = pixelToBlock(positionArray[i]);
     blocksInEachLine.push([]);
     for(let j = i+1; j < numberOfPins; j++) {
-      let end = pixelToBlock(positionArray[j]);
-      let slope = (end[1] - start[1]) / (end[0] - start[0]);
+      const end = pixelToBlock(positionArray[j]);
+      const slope = (end[1] - start[1]) / (end[0] - start[0]);
       let blockArray = [];
 
       if(Math.abs(slope) <= 1) {
-        let vector = end[0] > start[0] ? [1, slope] : [-1, -slope];
+        const vector = end[0] > start[0] ? [1, slope] : [-1, -slope];
         let currentX = Math.round(start[0]);
         let currentY = start[1] + slope * (Math.round(start[0]) - start[0]);
-        let endX = Math.round(end[0]);
+        const endX = Math.round(end[0]);
         
         while(currentX - vector[0] != endX) { 
           blockArray.push([currentX, Math.round(currentY)]);
@@ -228,10 +228,10 @@ function setup() {
           currentY += vector[1];    
         }
       } else {
-        let vector = end[1] > start[1] ? [1/slope, 1] : [-1/slope, -1];
+        const vector = end[1] > start[1] ? [1/slope, 1] : [-1/slope, -1];
         let currentY = Math.round(start[1]);
         let currentX = start[0] + (1/slope) * (Math.round(start[1]) - start[1]);
-        let endY = Math.round(end[1]);
+        const endY = Math.round(end[1]);
         
         while(currentY - vector[1] != endY) { 
           blockArray.push([Math.round(currentX), currentY]);
@@ -294,8 +294,7 @@ function draw() {
   for(let i = 0; i < res; i++){
     videoSample.push([]);
     for(let j = 0; j < res; j++){
-      let sample = getVideoSample(i, j);
-      videoSample[i].push(sample);
+      videoSample[i].push(getVideoSample(i, j));
     }
   }
 
@@ -313,7 +312,7 @@ function draw() {
         } else {
           videoSampleImage.fill(255, constrain(map(irisState, PI / 3 - 0.8, PI / 3, 255, 0), 0, 255));
           videoSampleImage.textFont(font, 12);
-          videoSampleImage.text(characterMap(videoSample[j][i]), (j+0.5)*(600/res), (i+0.5)*(600/res));
+          videoSampleImage.text(characterMap(videoSample[j][i]), (j + 0.5) * (600 / res), (i + 0.5) * (600 / res));
         }
       }
       lastVideoValue[(frameCount / 5) % 2][i] = sum;
@@ -348,19 +347,19 @@ if(irisState < PI / 3 - 0.0001){
     let bestValuePerBlock;
     for(let i1 = currentPin + 15; i1 <= currentPin + numberOfPins - 15; i1 += (Math.floor(Math.random() * 4) + 1)) {
       
-      let i = i1 % numberOfPins;
+      const i = i1 % numberOfPins;
 
       if(currentLines.length > 0 && i === currentLines[currentLines.length - 1][0]) continue;
 
-      let blocks = getLineBlocks(currentPin, i);
-      let lineTotalValue = coef * res * lengthOfEachLine[Math.abs(currentPin - i)];
-      let valuePerBlock = lineTotalValue / blocks.length;
+      const blocks = getLineBlocks(currentPin, i);
+      const lineTotalValue = coef * res * lengthOfEachLine[Math.abs(currentPin - i)];
+      const valuePerBlock = lineTotalValue / blocks.length;
       let score = 0;
 
       blocks.forEach(e => {
-        let canvas = currentCanvas[e[0]][e[1]];
-        let truth = videoSample[e[0]][e[1]];
-        score += diffFormula(canvas, truth) - diffFormula(canvas + valuePerBlock, truth); // old difference - new difference
+        const canvasV = currentCanvas[e[0]][e[1]];
+        const actualV = videoSample[e[0]][e[1]];
+        score += diffFormula(canvasV, actualV) - diffFormula(canvasV + valuePerBlock, actualV); // old difference - new difference
       });
 
       if(score > bestScore) {
@@ -373,7 +372,7 @@ if(irisState < PI / 3 - 0.0001){
     // add best line to queue
     if(bestScore > 0){
       currentLines.push(bestLine);
-      let blocks = getLineBlocks(bestLine[0], bestLine[1]);
+      const blocks = getLineBlocks(bestLine[0], bestLine[1]);
       blocks.forEach(e => {
         currentCanvas[e[0]][e[1]] += bestValuePerBlock;
       });
@@ -391,13 +390,12 @@ if(irisState < PI / 3 - 0.0001){
 
   // remove first lines in queue
   if(currentLines.length > totalLines) {
-    let removedLines = currentLines.splice(0, currentLines.length - totalLines);
+    const removedLines = currentLines.splice(0, currentLines.length - totalLines);
 
     removedLines.forEach(line => {
-      let blocks = getLineBlocks(line[0], line[1]);
-      let lineTotalValue = coef * res * lengthOfEachLine[Math.abs(line[0] - line[1])];
-      let valuePerBlock = lineTotalValue / blocks.length;
-
+      const blocks = getLineBlocks(line[0], line[1]);
+      const lineTotalValue = coef * res * lengthOfEachLine[Math.abs(line[0] - line[1])];
+      const valuePerBlock = lineTotalValue / blocks.length;
       blocks.forEach(e => {
         currentCanvas[e[0]][e[1]] -= valuePerBlock; // old difference - new difference 
       });
@@ -409,7 +407,7 @@ if(irisState < PI / 3 - 0.0001){
   // show strings
   if(handleMap(actualAngle, 0, 255, true) < 254.9) {
     // draw all lines in the queue
-    stroke(255, 15);
+    stroke(255, constrain(map(irisState, PI / 3 - 0.8, PI / 3, 15, 0), 0, 15));
     strokeWeight(radius * 0.0025);
     currentLines.forEach(e => {
       line(positionArray[e[0]][0], positionArray[e[0]][1], positionArray[e[1]][0], positionArray[e[1]][1]);
@@ -458,26 +456,26 @@ if(irisState < PI / 3 - 0.0001){
   stroke(orangeColor);
   strokeWeight(2);
   noFill();
-  let handlePos = [radius * cos(actualAngle), radius * sin(actualAngle)];
+  const handlePos = [radius * cos(actualAngle), radius * sin(actualAngle)];
   line(radius + handlePos[0] * 1.02, radius + handlePos[1] * 1.02, radius + handlePos[0] * 1.07, radius + handlePos[1] * 1.07)
   arc(radius, radius, radius * 1.02 * 2, radius * 1.02 * 2, actualAngle - 0.3, actualAngle + 0.3);
   fill(bgColor);
   if(mouseIsNearHandle() || draggingHandle) circle(radius + handlePos[0] * 1.07, radius + handlePos[1] * 1.07, radius * 0.03);
 
   // draw iris
-  let arcRotateAngle = irisState;
-  let arcLengths = tmpAngleFunc(arcRotateAngle);
-  let irisR = radius * 0.99;
+  const arcRotateAngle = irisState;
+  const arcLengths = irisArcFunc(arcRotateAngle);
+  const irisR = radius * 0.99;
   translate(radius, radius);
   fill(bgColor);
   strokeWeight(2);
   stroke(255, constrain(map(irisState, 0, 0.1, 0, 255), 0, 255));
 
   for(let i = 0; i < TWO_PI - 0.001; i += TWO_PI / 8) {
-    let arcStartPos1 = [irisR * cos(i - PI / 4), irisR * sin(i - PI / 4)];
-    let arcStartPos2 = [irisR * cos(i), irisR * sin(i)];
-    let arcCenter1 = [arcStartPos1[0] + irisR * cos(PI + i - PI / 4 + arcRotateAngle), arcStartPos1[1] + irisR * sin(PI + i - PI / 4 + arcRotateAngle)];
-    let arcCenter2 = [arcStartPos2[0] + irisR * cos(PI + i + arcRotateAngle), arcStartPos2[1] + irisR * sin(PI + i + arcRotateAngle)];
+    const arcStartPos1 = [irisR * cos(i - PI / 4), irisR * sin(i - PI / 4)];
+    const arcStartPos2 = [irisR * cos(i), irisR * sin(i)];
+    const arcCenter1 = [arcStartPos1[0] + irisR * cos(PI + i - PI / 4 + arcRotateAngle), arcStartPos1[1] + irisR * sin(PI + i - PI / 4 + arcRotateAngle)];
+    const arcCenter2 = [arcStartPos2[0] + irisR * cos(PI + i + arcRotateAngle), arcStartPos2[1] + irisR * sin(PI + i + arcRotateAngle)];
 
     beginShape();
     for(let j = 0; j < arcLengths[0]; j += 0.05) {
@@ -497,10 +495,10 @@ if(irisState < PI / 3 - 0.0001){
 
   // draw capture button
   if(maxMiniCanvasRows > 0 ) {
-    let buttonCenter = getCaptureButtonCenter();
-    let buttonRadius = radius * buttonSizeRatio;
-    let iconCornerDist = buttonRadius * 0.25;
-    let iconCornerSize = buttonRadius * 0.4;
+    const buttonCenter = getCaptureButtonCenter();
+    const buttonRadius = radius * buttonSizeRatio;
+    const iconCornerDist = buttonRadius * 0.25;
+    const iconCornerSize = buttonRadius * 0.4;
     if(irisState < 0.001 && mouseIsOnButton(getCaptureButtonCenter(), radius * buttonSizeRatio)) fill(60);
     else fill(bgColor);
     strokeWeight(2);
@@ -532,8 +530,8 @@ if(irisState < PI / 3 - 0.0001){
     if(i === savedCanvas.length - 1) stroke(orangeColor);
 
     if(maxMiniCanvasRows === 2) {
-      let posCorner = miniCanvasPosition(i, savedCanvas.length);
-      let posCenter = [posCorner[0] + 0.5 * miniCanvasSize, posCorner[1] + 0.5 * miniCanvasSize];
+      const posCorner = miniCanvasPosition(i, savedCanvas.length);
+      const posCenter = [posCorner[0] + 0.5 * miniCanvasSize, posCorner[1] + 0.5 * miniCanvasSize];
       image(v, posCorner[0], posCorner[1], miniCanvasSize, miniCanvasSize);
       circle(posCenter[0], posCenter[1], miniCanvasSize);
       if(mouseIsOnButton(posCenter, 0.5 * miniCanvasSize)) {
@@ -541,8 +539,8 @@ if(irisState < PI / 3 - 0.0001){
         drawCross(posCenter, miniCanvasSize * 0.9);
       }
     } else if(maxMiniCanvasRows === 1 && i >= savedCanvas.length-3) {
-      let posCorner = miniCanvasPosition(i-max(savedCanvas.length-3, 0), min(savedCanvas.length, 3));
-      let posCenter = [posCorner[0] + 0.5 * miniCanvasSize, posCorner[1] + 0.5 * miniCanvasSize];
+      const posCorner = miniCanvasPosition(i-max(savedCanvas.length-3, 0), min(savedCanvas.length, 3));
+      const posCenter = [posCorner[0] + 0.5 * miniCanvasSize, posCorner[1] + 0.5 * miniCanvasSize];
       image(v, posCorner[0], posCorner[1], miniCanvasSize, miniCanvasSize);
       circle(posCenter[0], posCenter[1], miniCanvasSize);
       if(mouseIsOnButton(posCenter, 0.5 * miniCanvasSize)) {
@@ -612,7 +610,7 @@ function getHandleCenter() {
 }
 
 function mouseIsNearHandle() {
-  let handleCenter = getHandleCenter();
+  const handleCenter = getHandleCenter();
   return dist(mouseX-(width/2-radius-currentShiftDistance), mouseY-(height/2-radius), handleCenter[0], handleCenter[1]) < radius*0.2;
 }
 
@@ -657,14 +655,14 @@ function mouseReleased() {
 
   savedCanvas.forEach((v, i) => {
     if(maxMiniCanvasRows === 2) {
-      let posCorner = miniCanvasPosition(i, savedCanvas.length);
-      let posCenter = [posCorner[0] + 0.5 * miniCanvasSize, posCorner[1] + 0.5 * miniCanvasSize];
+      const posCorner = miniCanvasPosition(i, savedCanvas.length);
+      const posCenter = [posCorner[0] + 0.5 * miniCanvasSize, posCorner[1] + 0.5 * miniCanvasSize];
       if(mouseIsOnButton(posCenter, 0.5 * miniCanvasSize)) {
         savedCanvas.splice(i, 1);
       }
     } else if(maxMiniCanvasRows === 1 && i >= savedCanvas.length-3) {
-      let posCorner = miniCanvasPosition(i-max(savedCanvas.length-3, 0), min(savedCanvas.length, 3));
-      let posCenter = [posCorner[0] + 0.5 * miniCanvasSize, posCorner[1] + 0.5 * miniCanvasSize];
+      const posCorner = miniCanvasPosition(i-max(savedCanvas.length-3, 0), min(savedCanvas.length, 3));
+      const posCenter = [posCorner[0] + 0.5 * miniCanvasSize, posCorner[1] + 0.5 * miniCanvasSize];
       if(mouseIsOnButton(posCenter, 0.5 * miniCanvasSize)) {
         savedCanvas.splice(i, 1);
       }
