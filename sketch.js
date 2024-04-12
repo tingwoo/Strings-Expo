@@ -57,6 +57,11 @@ let currentShiftDistance = 0;
 
 let maxMiniCanvasRows;
 
+let activeValue = 1;
+let lastVideoValue = [new Array(res).fill(255), new Array(res).fill(255)];
+
+let irisState = Math.PI / 3;
+
 function getColorFromPixel(x, y) {
   let w = video.width;
   let i = (y*w+x)*4;
@@ -160,6 +165,26 @@ function characterMap(bri) {
 function drawCross(c, width) {
   line(c[0] - width / 2, c[1] - width / 2, c[0] + width / 2, c[1] + width / 2);
   line(c[0] - width / 2, c[1] + width / 2, c[0] + width / 2, c[1] - width / 2);
+}
+
+function tmpAngleFunc(angle) {
+  let a = 1 - Math.cos(angle);
+  let b = Math.sin(angle);
+  let c = 1 / Math.sqrt(2) - Math.cos(angle - PI * 0.25);
+  let d = 1 / Math.sqrt(2) + Math.sin(angle - PI * 0.25);
+
+  let dist = sqrt(sq(a - c) + sq(b - d));
+  let a0 = Math.acos(dist * 0.5);
+
+  let vec1 = [Math.cos(PI * 0.25 - angle), Math.sin(PI * 0.25 - angle)]
+  let vec2 = [a - c, b - d];
+  let a1 = Math.acos((vec1[0] * vec2[0] + vec1[1] * vec2[1]) / dist);
+
+  let vec3 = [-Math.cos(angle), Math.sin(angle)]
+  let vec4 = [c - a, d - b];
+  let a2 = Math.acos((vec3[0] * vec4[0] + vec3[1] * vec4[1]) / dist);
+
+  return [angle > PI * 0.25 ? (a0 - a1) : (a0 + a1), PI - a0 - a2];
 }
 
 let font;
@@ -274,25 +299,48 @@ function draw() {
     }
   }
 
+  // draw pixels
   if(frameCount % 5 === 0) {
     videoSampleImage.background(bgColor);
     videoSampleImage.textAlign(CENTER, CENTER);
     for(let i = 0; i < res; i++){
+      let sum = 0;
       for(let j = 0; j < res; j++){
+        sum += videoSample[j][i];
         if(!showAsciiArt) {
           videoSampleImage.fill(videoSample[j][i]);
           videoSampleImage.rect(j*(600/res), i*(600/res), 600/res*1.05, 600/res*1.05);
         } else {
-          videoSampleImage.fill(255);
+          videoSampleImage.fill(255, constrain(map(irisState, PI / 3 - 0.8, PI / 3, 255, 0), 0, 255));
           videoSampleImage.textFont(font, 12);
           videoSampleImage.text(characterMap(videoSample[j][i]), (j+0.5)*(600/res), (i+0.5)*(600/res));
         }
       }
+      lastVideoValue[(frameCount / 5) % 2][i] = sum;
     }
+
+    // increase activeness
+    let diff = 0
+    for (let i = 0; i < res; i++) {
+      const d = lastVideoValue[0][i] - lastVideoValue[1][i];
+      diff += d * d;12
+    }
+    diff = sqrt(diff / res)
+    activeValue = activeValue + diff / 255 * 0.05
+  }
+
+  // decrease activeness
+  activeValue = constrain(activeValue - 0.002, 0, 1);
+
+  // change iris state
+  if(activeValue > 0.5) {
+    irisState -= (irisState) * (PI / 3 - irisState + 0.01) / 10;
+  } else {
+    irisState += (PI / 3 - irisState) * (irisState + 0.01) / 10;
   }
 
   // timerCkpt();
-
+if(irisState < PI / 3 - 0.0001){
   for(let k = 0; k < 50; k++) {
     // find the best line
     let bestScore = -100000000;
@@ -392,6 +440,7 @@ function draw() {
     
     image(displayImage, 0, 0, 2*radius, 2*radius);
   }
+}
 
   // show info
   if(showFrameRate) {
@@ -401,8 +450,8 @@ function draw() {
     fill(240);
     noStroke();
     text("Frame rate: " + str(Math.round(fr)), 5, 20);
-
-    text(str(video.width) + " x " + str(video.height), 5, 40);
+    text("Activeness: " + str(activeValue.toFixed(2)), 5, 40);
+    text(str(video.width) + " x " + str(video.height), 5, 60);
   }
 
   // draw handle
@@ -415,15 +464,47 @@ function draw() {
   fill(bgColor);
   if(mouseIsNearHandle() || draggingHandle) circle(radius + handlePos[0] * 1.07, radius + handlePos[1] * 1.07, radius * 0.03);
 
+  // draw iris
+  let arcRotateAngle = irisState;
+  let arcLengths = tmpAngleFunc(arcRotateAngle);
+  let irisR = radius * 0.99;
+  translate(radius, radius);
+  fill(bgColor);
+  strokeWeight(2);
+  stroke(255, constrain(map(irisState, 0, 0.1, 0, 255), 0, 255));
+
+  for(let i = 0; i < TWO_PI - 0.001; i += TWO_PI / 8) {
+    let arcStartPos1 = [irisR * cos(i - PI / 4), irisR * sin(i - PI / 4)];
+    let arcStartPos2 = [irisR * cos(i), irisR * sin(i)];
+    let arcCenter1 = [arcStartPos1[0] + irisR * cos(PI + i - PI / 4 + arcRotateAngle), arcStartPos1[1] + irisR * sin(PI + i - PI / 4 + arcRotateAngle)];
+    let arcCenter2 = [arcStartPos2[0] + irisR * cos(PI + i + arcRotateAngle), arcStartPos2[1] + irisR * sin(PI + i + arcRotateAngle)];
+
+    beginShape();
+    for(let j = 0; j < arcLengths[0]; j += 0.05) {
+      vertex(arcCenter1[0] + irisR * cos(arcRotateAngle + i - PI/4 + j), arcCenter1[1] + irisR * sin(arcRotateAngle + i - PI/4 + j))
+    }
+
+    for(let j = arcLengths[1]; j > 0; j -= 0.05) {
+      vertex(arcCenter2[0] + irisR * cos(arcRotateAngle + i + j), arcCenter2[1] + irisR * sin(arcRotateAngle + i + j));
+    }
+
+    for(let j = 0; j < PI * 0.25; j += 0.05) {
+      vertex(irisR * cos(i - j), irisR * sin(i - j));
+    }
+    endShape(CLOSE);
+  }
+  translate(-radius, -radius);
+
   // draw capture button
-  if(maxMiniCanvasRows > 0) {
+  if(maxMiniCanvasRows > 0 ) {
     let buttonCenter = getCaptureButtonCenter();
     let buttonRadius = radius * buttonSizeRatio;
     let iconCornerDist = buttonRadius * 0.25;
     let iconCornerSize = buttonRadius * 0.4;
-    if(mouseIsOnButton(getCaptureButtonCenter(), radius * buttonSizeRatio)){
-      fill(60);
-    }
+    if(irisState < 0.001 && mouseIsOnButton(getCaptureButtonCenter(), radius * buttonSizeRatio)) fill(60);
+    else fill(bgColor);
+    strokeWeight(2);
+    stroke(255);
     circle(buttonCenter[0], buttonCenter[1], buttonRadius*2);
     arc(buttonCenter[0]-iconCornerDist, buttonCenter[1]-iconCornerDist, iconCornerSize, iconCornerSize, Math.PI*1.0-0.05, Math.PI*1.5+0.05);
     arc(buttonCenter[0]+iconCornerDist, buttonCenter[1]-iconCornerDist, iconCornerSize, iconCornerSize, Math.PI*1.5-0.05, Math.PI*0.0+0.05);
@@ -569,7 +650,7 @@ function mouseReleased() {
   handleAngle += handleAngleDragging;
   handleAngleDragging = 0;
 
-  if(maxMiniCanvasRows > 0 && mouseIsOnButton(getCaptureButtonCenter(), radius * buttonSizeRatio)){
+  if(maxMiniCanvasRows > 0 && irisState < 0.001 && mouseIsOnButton(getCaptureButtonCenter(), radius * buttonSizeRatio)){
     captureCanvas();
     return
   }
