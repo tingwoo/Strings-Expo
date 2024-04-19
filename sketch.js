@@ -399,7 +399,7 @@ function draw() {
     }
 
     // reset canvas value regularly
-    if(frameCount % 1800 == 0 && irisState > PI3 - 0.001) {
+    if (frameCount % 1800 == 0 && irisState > PI3 - 0.001) {
         currentLines = [];
         resetCurrentCanvas();
     }
