@@ -286,13 +286,8 @@ function setup() {
         }
     }
 
-    // initialize currentCanvas to all white
-    for (let i = 0; i < res; i++) {
-        currentCanvas.push([]);
-        for (let j = 0; j < res; j++) {
-            currentCanvas[i].push(0);
-        }
-    }
+    // initialize currentCanvas to all black
+    resetCurrentCanvas();
 
     // initialize lengthOfEachLine
     for (let i = 0; i < numberOfPins; i++) {
@@ -394,13 +389,19 @@ function draw() {
     }
 
     // decrease activeness
-    activeValue = constrain(activeValue - 0.00175, 0, 1);
+    activeValue = constrain(activeValue - 0.0015, 0, 1);
 
     // change iris state
     if (activeValue > 0.5) {
         irisState -= (irisState * (PI3 - irisState + 0.01)) / 10;
     } else {
         irisState += ((PI3 - irisState) * (irisState + 0.01)) / 10;
+    }
+
+    // reset canvas value regularly
+    if(frameCount % 1800 == 0 && irisState > PI3 - 0.001) {
+        currentLines = [];
+        resetCurrentCanvas();
     }
 
     // timerCkpt();
@@ -873,4 +874,14 @@ function mouseDragged() {
         -HALF_PI,
         HALF_PI
     );
+}
+
+function resetCurrentCanvas() {
+    currentCanvas = [];
+    for (let i = 0; i < res; i++) {
+        currentCanvas.push([]);
+        for (let j = 0; j < res; j++) {
+            currentCanvas[i].push(0);
+        }
+    }
 }
