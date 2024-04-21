@@ -1,5 +1,3 @@
-// my video size: 640 x 480
-
 let canvas;
 let savedCanvas = [];
 
@@ -35,7 +33,7 @@ let totalLines = 5000;
 
 let fr = 0;
 
-let showFrameRate = false;
+let showInfo = false;
 let showAsciiArt = true;
 
 let draggingHandle = false;
@@ -60,6 +58,12 @@ let maxMiniCanvasCols;
 
 let activeValue = 1;
 let lastVideoValue = [new Array(res).fill(255), new Array(res).fill(255)];
+
+let infoPanelCount = 0;
+let targetChar;
+let combo = 0;
+const comboTarget = 100;
+let rewardMode = false;
 
 const PI3 = Math.PI / 3;
 const PI4 = Math.PI / 4;
@@ -310,6 +314,8 @@ function setup() {
 
     orangeColor = color(255, 79, 0);
     bgColor = color(20);
+
+    console.log("Hi there. Press F for a challenge.");
 }
 
 function draw() {
@@ -530,7 +536,7 @@ function draw() {
     }
 
     // show info
-    if (showFrameRate) {
+    if (showInfo) {
         if (frameCount % 30 === 0) {
             fr = frameRate();
         }
@@ -538,7 +544,15 @@ function draw() {
         noStroke();
         text("Frame rate: " + str(Math.round(fr)), 5, 20);
         text("Activeness: " + str(activeValue.toFixed(2)), 5, 40);
-        text(str(video.width) + " x " + str(video.height), 5, 60);
+
+        if (!rewardMode) {
+            rect(5, 60, infoPanelCount * 10, 10);
+            text('Press "' + targetChar.toUpperCase() + '"', 5, 90);
+            text(str(combo) + "/" + str(comboTarget), 5, 110);
+        } else {
+            text("Thank you.", 5, 90);
+            text(str(comboTarget) + "/" + str(comboTarget), 5, 110);
+        }
     }
 
     // draw handle
@@ -611,6 +625,41 @@ function draw() {
             endShape(CLOSE);
         }
         translate(-radius, -radius);
+    }
+
+    // draw reward
+    if (rewardMode) {
+        let sc = radius / 344;
+        translate(radius, 1.9 * radius);
+
+        noFill();
+        stroke(orangeColor);
+        strokeWeight(sc * 10);
+        strokeCap(SQUARE);
+
+        beginShape();
+        vertex(0, 0);
+        vertex(-sc * 80, -sc * 80);
+        vertex(-sc * 80, -sc * 120);
+        vertex(-sc * 55, -sc * 145);
+        vertex(-sc * 25, -sc * 145);
+        vertex(0, -sc * 120);
+        vertex(sc * 25, -sc * 145);
+        vertex(sc * 55, -sc * 145);
+        vertex(sc * 80, -sc * 120);
+        vertex(sc * 80, -sc * 80);
+        endShape(CLOSE);
+
+        translate(-radius, -1.9 * radius);
+
+        arc(
+            radius,
+            radius,
+            1.8 * radius,
+            1.8 * radius,
+            HALF_PI + 0.25,
+            HALF_PI - 0.25
+        );
     }
 
     // draw capture button
@@ -698,6 +747,16 @@ function draw() {
         }
     });
 
+    // info panel countdown
+    if (infoPanelCount > 0) {
+        infoPanelCount -= 1 / frameRate();
+        if (infoPanelCount <= 0) {
+            infoPanelCount = 0;
+            showInfo = false;
+            combo = 0;
+        }
+    }
+
     // timerCkpt();
 }
 
@@ -729,6 +788,10 @@ function captureCanvas() {
         tmpCanvas.triangle(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1]);
     }
     savedCanvas.push(tmpCanvas);
+    if (rewardMode) {
+        rewardMode = false;
+        combo = 0;
+    }
 }
 
 function miniCanvasPosition(index, total) {
@@ -816,9 +879,35 @@ function windowResized() {
 }
 
 function keyTyped() {
-    if (key === "f" || key === "F") showFrameRate = !showFrameRate;
-    else if (key === "a" || key === "A") showAsciiArt = !showAsciiArt;
-    else if (key === "c" || key === "C") captureCanvas();
+    if (key === "f" || key === "F") {
+        showInfo = !showInfo;
+        combo = 0;
+        if (showInfo) {
+            infoPanelCount = 10; // seconds
+            updateChar();
+        } else infoPanelCount = 0;
+    } else if (showInfo && !rewardMode && key.toLowerCase() === targetChar) {
+        combo += 1;
+        if (combo === comboTarget) {
+            infoPanelCount = 10;
+            rewardMode = true;
+        } else {
+            infoPanelCount = 10 - (9 * combo) / (comboTarget - 1);
+            updateChar();
+        }
+    } else {
+        combo = 0;
+    }
+    // else if (key === "a" || key === "A") showAsciiArt = !showAsciiArt;
+    // else if (key === "c" || key === "C") captureCanvas();
+}
+
+function updateChar() {
+    let newChar;
+    do {
+        newChar = String.fromCharCode(97 + Math.floor(random(26)));
+    } while (targetChar === newChar || newChar === "f");
+    targetChar = newChar;
 }
 
 function mousePressed() {
